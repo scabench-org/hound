@@ -483,6 +483,9 @@ def build(
                 console.print(table)
                 console.print(f"\n  [bold]Total:[/bold] {total_nodes} nodes, {total_edges} edges")
     
+            # Call the new function to write knowledge_graphs.json
+            _write_knowledge_graphs_metadata(graphs_dir)
+
             # Step 3: Visualization
             if visualize:
                 console.print("\n[bold]Step 3:[/bold] Visualization")
@@ -516,6 +519,21 @@ def build(
             log_path = debug_logger.finalize()
             console.print(f"\n[cyan]Debug log saved:[/cyan] {log_path}")
         raise
+
+
+def _write_knowledge_graphs_metadata(graphs_dir: Path):
+    """Generates knowledge_graphs.json from graph_*.json files."""
+    knowledge_graphs_path = graphs_dir / "knowledge_graphs.json"
+    graph_files = list(graphs_dir.glob("graph_*.json"))
+    
+    graphs_dict = {}
+    for graph_file in graph_files:
+        graph_name = graph_file.stem.replace('graph_', '')
+        # Store absolute path
+        graphs_dict[graph_name] = str(graph_file.resolve())
+    
+    with open(knowledge_graphs_path, 'w') as f:
+        json.dump({'graphs': graphs_dict}, f, indent=2)
 
 
 def custom(
