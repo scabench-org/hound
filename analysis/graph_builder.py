@@ -416,6 +416,7 @@ class GraphBuilder:
             self._discover_graphs(manifest, cards, focus_areas, max_graphs, force_graphs)
         
         # Phase 2: Iterative Graph Building
+        self._build_had_failures = False
         if self.debug:
             print("\n[Phase 2] Iterative Graph Building")
         for i in range(max_iterations):
@@ -425,10 +426,13 @@ class GraphBuilder:
             self._emit("building", f"Building graphs: iteration {i+1}/{max_iterations}")
             
             # Build/refine graphs with early stopping if complete
-            had_updates = self._build_iteration(cards)
-            
-            # Early exit if no graphs were updated (all complete)
-            if not had_updates and i > 0:  # Allow at least 2 iterations
+            had_updates, had_failures = self._build_iteration(cards)
+            if had_failures:
+                self._build_had_failures = True
+
+            # Early exit only if nothing was updated AND nothing failed: a
+            # failure-only pass must not be mistaken for completion.
+            if not had_updates and not had_failures and i > 0:  # Allow at least 2 iterations
                 self._emit("early_exit", f"All graphs complete after {i+1} iterations")
                 if self.debug:
                     print(f"  Early exit: All graphs complete after {i+1} iterations")
@@ -437,7 +441,12 @@ class GraphBuilder:
         # Phase 3: Save results
         self._emit("phase", "Saving Results")
         results = self._save_results(output_dir, manifest)
-        
+        if isinstance(results, dict):
+            results["had_failures"] = bool(getattr(self, "_build_had_failures", False))
+        if getattr(self, "_build_had_failures", False):
+            self._emit("warn", "Some graph-building LLM calls failed; the graph may be INCOMPLETE. "
+                               "Re-run with --debug for details, and consider `graph rm --all` then rebuild.")
+
         duration = time.time() - start_time
         self._emit("complete", f"Complete in {duration:.1f}s")
         
@@ -459,18 +468,18 @@ class GraphBuilder:
             for graph_spec in force_graphs:
                 name = graph_spec["name"].replace(' ', '_').replace('/', '_')
                 focus = graph_spec["focus"]
-            self.graphs[name] = KnowledgeGraph(
-                name=name,
-                focus=focus,
-                metadata={"created_at": time.time(), "display_name": graph_spec["name"]}
-            )
-            self._emit("graph", f"Created graph: {graph_spec['name']} (focus: {focus})")
-            # Save initial empty graph immediately
-            try:
-                self._save_graph(output_dir=self._output_dir, graph=self.graphs[name])
-                self._emit("save", f"Saved schema for {name}")
-            except Exception:
-                pass
+                self.graphs[name] = KnowledgeGraph(
+                    name=name,
+                    focus=focus,
+                    metadata={"created_at": time.time(), "display_name": graph_spec["name"]}
+                )
+                self._emit("graph", f"Created graph: {graph_spec['name']} (focus: {focus})")
+                # Save initial empty graph immediately
+                try:
+                    self._save_graph(output_dir=self._output_dir, graph=self.graphs[name])
+                    self._emit("save", f"Saved schema for {name}")
+                except Exception:
+                    pass
             return
         
         # Use adaptive sampling based on token count for discovery phase
@@ -606,10 +615,12 @@ The FIRST must be the system/component/flow overview."""
         if discovery.suggested_edge_types:
             self._emit("note", f"Custom edge types: {', '.join(discovery.suggested_edge_types)}")
     
-    def _build_iteration(self, cards: list[dict]) -> bool:
+    def _build_iteration(self, cards: list[dict]) -> tuple[bool, bool]:
         """
         Single iteration to build/refine graphs.
-        Returns True if any graph was updated, False if all graphs are complete.
+        Returns (any_updates, had_failures): any_updates is True if any graph
+        gained nodes/edges; had_failures is True if any per-graph update call
+        failed, so the caller must not treat this pass as completion.
         """
         
         any_updates = False
@@ -650,10 +661,10 @@ The FIRST must be the system/component/flow overview."""
             else:
                 had_failures = True
         
-        # Don't allow early-exit logic in caller to treat an error-only pass as completion
+        # Propagate had_failures so the caller does not treat an error-only pass as completion.
         if had_failures and self.debug:
             print("  One or more update calls failed this iteration; skipping early completion heuristics.")
-        return any_updates
+        return any_updates, had_failures
     
     def _get_orphaned_nodes(self, graph: KnowledgeGraph) -> set:
         """Find nodes with no edges (neither incoming nor outgoing)"""
