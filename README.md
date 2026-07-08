@@ -30,7 +30,7 @@
 
 Hound is a Language-agnostic AI auditor that autonomously builds and refines adaptive knowledge graphs for deep, iterative code reasoning.
 
-**Hound is looking for a new admin/maintainer. Ping me at bernhard[at]floatingpragma[dot]io if interested.
+**Hound is looking for a new admin/maintainer. Ping me at bernhard[at]floatingpragma[dot]io if interested.**
 
 ### Key Features
 
