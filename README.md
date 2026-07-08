@@ -30,6 +30,8 @@
 
 Hound is a Language-agnostic AI auditor that autonomously builds and refines adaptive knowledge graphs for deep, iterative code reasoning.
 
+**Hound is looking for a new admin/maintainer. Ping me at bernhard[at]floatingpragma[dot]io if interested.
+
 ### Key Features
 
 - Graph-driven analysis – Flexible, agent-designed graphs that can model any aspect of a system (e.g. architecture, access control, value flows, math, etc.)
