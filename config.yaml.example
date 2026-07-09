@@ -24,6 +24,16 @@ anthropic:
 xai:
   api_key_env: XAI_API_KEY
 
+openrouter:
+  api_key_env: OPENROUTER_API_KEY
+  # Optional: HTTP-Referer header for OpenRouter rankings
+  # referer: https://your-site.com
+  # Optional: X-Title header for OpenRouter dashboard
+  # app_title: Hound
+
+groq:
+  api_key_env: GROQ_API_KEY
+
 # Model configuration with context limits
 models:
   # Graph building model - needs large context
@@ -74,6 +84,18 @@ models:
     provider: openai
     model: gpt-4o
     # No max_context specified - will use global default
+
+  # Example: OpenRouter model profile (uncomment to use)
+  # openrouter_agent:
+  #   provider: openrouter
+  #   model: meta-llama/llama-3.1-405b-instruct
+  #   max_context: 128000
+
+  # Example: Groq model profile for fast inference (uncomment to use)
+  # groq_fast:
+  #   provider: groq
+  #   model: llama-3.3-70b-versatile
+  #   max_context: 128000
 
 # Global context settings (used when model doesn't specify max_context)
 context:
