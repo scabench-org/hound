@@ -28,6 +28,17 @@ from .base_provider import BaseLLMProvider
 T = TypeVar('T', bound=BaseModel)
 
 
+def _is_non_retryable(exc: BaseException) -> bool:
+    """Check if an exception should NOT be retried (auth errors, bad model, etc.)."""
+    qualname = f"{type(exc).__module__}.{type(exc).__qualname__}"
+    return qualname in {
+        "litellm.exceptions.AuthenticationError",
+        "litellm.exceptions.NotFoundError",
+        "litellm.exceptions.BadRequestError",
+        "litellm.exceptions.PermissionDeniedError",
+    }
+
+
 class LiteLLMProvider(BaseLLMProvider):
     """LiteLLM AI gateway provider implementation."""
 
@@ -62,7 +73,13 @@ class LiteLLMProvider(BaseLLMProvider):
 
     def _completion(self, messages: list[dict], **extra_kwargs) -> Any:
         """Call litellm.completion with standard kwargs."""
-        import litellm
+        try:
+            import litellm
+        except ImportError:
+            raise ImportError(
+                "litellm is required for the LiteLLM provider. "
+                "Install it with: pip install 'litellm>=1.83.0,<2.0'"
+            )
 
         kwargs: dict[str, Any] = {
             "model": self.model_name,
@@ -130,9 +147,15 @@ class LiteLLMProvider(BaseLLMProvider):
                 )
                 self._store_usage(response)
                 json_str = response.choices[0].message.content
+                if not json_str:
+                    raise ValueError("Empty response content from LiteLLM")
                 return schema.model_validate_json(json_str)
 
+            except ImportError:
+                raise
             except Exception as e:
+                if _is_non_retryable(e):
+                    raise RuntimeError(f"LiteLLM call failed: {e}") from e
                 last_err = e
                 if self.verbose:
                     print(f"  Error: {e}")
@@ -156,9 +179,16 @@ class LiteLLMProvider(BaseLLMProvider):
             try:
                 response = self._completion(messages)
                 self._store_usage(response)
-                return response.choices[0].message.content
+                content = response.choices[0].message.content
+                if content is None:
+                    raise ValueError("Empty response content from LiteLLM")
+                return content
 
+            except ImportError:
+                raise
             except Exception as e:
+                if _is_non_retryable(e):
+                    raise RuntimeError(f"LiteLLM raw call failed: {e}") from e
                 last_err = e
                 if attempt < self.retries - 1:
                     sleep_time = random.uniform(self.backoff_min, self.backoff_max)
