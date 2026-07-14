@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from .anthropic_provider import AnthropicProvider
 from .deepseek_provider import DeepSeekProvider
 from .gemini_provider import GeminiProvider
+from .litellm_provider import LiteLLMProvider
 from .mock_provider import MockProvider
 from .openai_provider import OpenAIProvider
 from .token_tracker import get_token_tracker
@@ -32,7 +33,7 @@ class UnifiedLLMClient:
         The config now supports a 'provider' field for each model profile.
         If not specified, defaults to 'openai' for backward compatibility.
         
-        Available providers: openai, gemini, anthropic, xai
+        Available providers: openai, gemini, anthropic, xai, litellm
         
         Args:
             cfg: Configuration dictionary
@@ -119,6 +120,11 @@ class UnifiedLLMClient:
             )
         elif provider_name == "deepseek":
             self.provider = DeepSeekProvider(
+                **common_kwargs,
+                verbose=llm_verbose
+            )
+        elif provider_name == "litellm":
+            self.provider = LiteLLMProvider(
                 **common_kwargs,
                 verbose=llm_verbose
             )
