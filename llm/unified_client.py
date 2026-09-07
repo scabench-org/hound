@@ -7,6 +7,7 @@ from typing import Any, TypeVar
 from pydantic import BaseModel
 
 from .anthropic_provider import AnthropicProvider
+from .atlascloud_provider import AtlasCloudProvider
 from .deepseek_provider import DeepSeekProvider
 from .gemini_provider import GeminiProvider
 from .litellm_provider import LiteLLMProvider
@@ -33,7 +34,7 @@ class UnifiedLLMClient:
         The config now supports a 'provider' field for each model profile.
         If not specified, defaults to 'openai' for backward compatibility.
         
-        Available providers: openai, gemini, anthropic, xai, litellm
+        Available providers: openai, atlascloud, gemini, anthropic, xai, litellm
         
         Args:
             cfg: Configuration dictionary
@@ -95,6 +96,13 @@ class UnifiedLLMClient:
         # Initialize the appropriate provider
         if provider_name == "openai":
             self.provider = OpenAIProvider(
+                **common_kwargs,
+                reasoning_effort=model_config.get("reasoning_effort"),
+                text_verbosity=model_config.get("text_verbosity"),
+                verbose=llm_verbose
+            )
+        elif provider_name == "atlascloud":
+            self.provider = AtlasCloudProvider(
                 **common_kwargs,
                 reasoning_effort=model_config.get("reasoning_effort"),
                 text_verbosity=model_config.get("text_verbosity"),

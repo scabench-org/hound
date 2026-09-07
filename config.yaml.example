@@ -6,6 +6,11 @@ openai:
   # Optional: override base URL (env var OPENAI_BASE_URL takes precedence)
   # base_url: https://api.openai.com
 
+# Atlas Cloud is optional and uses an OpenAI-compatible API.
+atlascloud:
+  api_key_env: ATLASCLOUD_API_KEY
+  base_url: https://api.atlascloud.ai/v1
+
 gemini:
   api_key_env: GOOGLE_API_KEY
   # Vertex AI (optional). When enabled, the Gemini provider will use Vertex AI
@@ -28,6 +33,11 @@ xai:
 models:
   # Graph building model - needs large context
   graph:
+    # Optional Atlas Cloud example (choose a current Text model from its catalog):
+    # provider: atlascloud
+    # model: deepseek-ai/deepseek-v4-pro
+    # max_context: 128000
+
     # GPT-4.1 WORKS WELL HERE BUT IS VERY EXPENSIVE!
     # provider: openai
     # model: gpt-4.1 
