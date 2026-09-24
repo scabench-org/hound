@@ -69,6 +69,26 @@ export OPENAI_API_KEY=your_key_here
 export OPENAI_BASE_URL=https://api.openai.com
 ```
 
+Atlas Cloud can be selected as an optional OpenAI-compatible provider without changing
+the default model profiles. Set its API key, then choose `provider: atlascloud` and a
+current Text model from the [Atlas Cloud model catalog](https://www.atlascloud.ai/models):
+
+```bash
+export ATLASCLOUD_API_KEY=your_key_here
+```
+
+```yaml
+atlascloud:
+  api_key_env: ATLASCLOUD_API_KEY
+  base_url: https://api.atlascloud.ai/v1
+
+models:
+  graph:
+    provider: atlascloud
+    model: deepseek-ai/deepseek-v4-pro
+    max_context: 128000
+```
+
 Using Gemini via Vertex AI (optional):
 
 - Enable Vertex AI mode (instead of AI Studio) and set your GCP project and region.

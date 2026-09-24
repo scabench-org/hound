@@ -27,6 +27,8 @@ class OpenAIProvider(BaseLLMProvider):
         backoff_max: float = 8.0,
         reasoning_effort: str | None = None,
         text_verbosity: str | None = None,
+        api_key_env: str | None = None,
+        base_url: str | None = None,
         **kwargs
     ):
         """Initialize OpenAI provider."""
@@ -45,15 +47,23 @@ class OpenAIProvider(BaseLLMProvider):
         self._last_token_usage = None
         
         # Get API key from environment
-        api_key_env = config.get("openai", {}).get("api_key_env", "OPENAI_API_KEY")
-        api_key = os.environ.get(api_key_env)
+        resolved_api_key_env = api_key_env or config.get("openai", {}).get(
+            "api_key_env", "OPENAI_API_KEY"
+        )
+        api_key = os.environ.get(resolved_api_key_env)
         if not api_key:
-            raise ValueError(f"API key not found in environment variable: {api_key_env}")
+            raise ValueError(
+                f"API key not found in environment variable: {resolved_api_key_env}"
+            )
         
         # Allow custom base URL via environment variable; default to public OpenAI endpoint
         # IMPORTANT: OpenAI Python SDK expects base_url to include the "/v1" path.
         # Normalize input so both "https://api.openai.com" and "https://api.openai.com/v1" work.
-        raw_base_url = os.environ.get("OPENAI_BASE_URL") or config.get("openai", {}).get("base_url")
+        raw_base_url = (
+            base_url
+            or os.environ.get("OPENAI_BASE_URL")
+            or config.get("openai", {}).get("base_url")
+        )
         base_url = (raw_base_url or "https://api.openai.com/v1").rstrip("/")
         if not base_url.endswith("/v1"):
             base_url = base_url + "/v1"
