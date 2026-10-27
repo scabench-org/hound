@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Dynamic Knowledge Graph Builder with agent-driven schema discovery."""
 
-import hashlib
 import json
 import sys
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -1389,7 +1389,9 @@ Return empty lists only if graph is TRULY complete and comprehensive."""
                 continue
     
     def _generate_id(self, prefix: str) -> str:
-        """Generate unique ID"""
-        timestamp = str(time.time())
-        hash_val = hashlib.sha256(timestamp.encode()).hexdigest()[:8]
-        return f"{prefix}_{hash_val}"
+        """Generate unique ID.
+
+        Must never derive ids from a clock hash: time.time() advances
+        only with OS clock granularity, so tight-loop calls collide and
+        self.edges[edge.id] = edge silently overwrites siblings."""
+        return f"{prefix}_{uuid.uuid4().hex[:12]}"
